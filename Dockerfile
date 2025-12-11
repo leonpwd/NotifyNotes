@@ -24,4 +24,4 @@ RUN apk add --no-cache su-exec
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["python", "src/main.py"]
-LABEL org.opencontainers.image.source="https://github.com/PingoLeon/NotifyNotes"
+LABEL org.opencontainers.image.source="https://github.com/leonpwd/NotifyNotes"
