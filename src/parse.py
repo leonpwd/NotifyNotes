@@ -74,67 +74,70 @@ def convert_notes_to_json(url_response, json_file):
             [fix_encoding_accents(td.get_text(separator=" ", strip=True)) for td in row.find_all("td")]
             for row in tbody.find_all("tr")
             if "master-1" in row.get("class", [])
-    ]
+        ]
 
-    data = [dict(zip(headers, cells)) for cells in rows if any(cells[1:])]
+        data = [dict(zip(headers, cells)) for cells in rows if any(cells[1:])]
 
-    section_map = {
-        "Projet": "Projet",
-        "Contrôle Continu": "Contrôle Continu",
-        "ContrÃ´le Continu": "Contrôle Continu",
-        "Examen": "Examen"
-    }
+        section_map = {
+            "Projet": "Projet",
+            "Contrôle Continu": "Contrôle Continu",
+            "ContrÃ´le Continu": "Contrôle Continu",
+            "Examen": "Examen"
+        }
 
-    organized = []
-    i = 0
-    while i < len(data):
-        ligne = data[i]
-        if ligne.get("Coef."):
-            matiere_nom = ligne[headers[0]]
-            coef = ligne["Coef."]
-            sections = {"Projet": [], "Contrôle Continu": [], "Examen": []}
-            i += 1
-            while i < len(data) and not data[i].get("Coef."):
-                sous_ligne = data[i].copy()
-                titre = sous_ligne[headers[0]].strip()
-                section = section_map.get(titre)
-                if section:
-                    # Supprimer la clé inutile
-                    sous_ligne.pop("Coef.", None)
-                    sous_ligne.pop("Rattrapage Re-sit session", None)
-                    sous_ligne.pop("Cours et évaluations Courses and evaluations", None)
-                    # Renommer la pondération au niveau de la section
-                    for key in ["Pondération Weight", "Pondï¿½ration Weight", "PondÁration Weight"]:
-                        if key in sous_ligne:
-                            sous_ligne["pondération - section"] = sous_ligne.pop(key)
-                    if "Notes Grades" in sous_ligne:
-                        sous_ligne["note"] = sous_ligne.pop("Notes Grades")
-                    # Séparation des notes et pondérations multiples
-                    note_val = sous_ligne.pop("note", "")
-                    pond_val = sous_ligne.pop("pondération", "")
-                    notes = []
-                    if note_val and ("(" in note_val and ")" in note_val):
-                        notes = split_notes(note_val)
-                    elif note_val or pond_val:
-                        notes = [{"note": note_val, "pondération": pond_val}]
-                    else:
-                        notes = []
-                    sous_ligne["notes"] = notes
-                    # Remettre la pondération de section si elle existe
-                    if pond_val:
-                        sous_ligne["pondération"] = pond_val
-                    sections[section].append(sous_ligne)
+        organized = []
+        i = 0
+        while i < len(data):
+            ligne = data[i]
+            if ligne.get("Coef."):
+                matiere_nom = ligne[headers[0]]
+                coef = ligne["Coef."]
+                sections = {"Projet": [], "Contrôle Continu": [], "Examen": []}
                 i += 1
-            if matiere_nom.strip() != "Crédits par indulgence / Leniency credits":
-                organized.append({
-                    "matiere": matiere_nom,
-                    "coef": coef,
-                    "sections": sections
-                })
+                while i < len(data) and not data[i].get("Coef."):
+                    sous_ligne = data[i].copy()
+                    titre = sous_ligne[headers[0]].strip()
+                    section = section_map.get(titre)
+                    if section:
+                        # Supprimer la clé inutile
+                        sous_ligne.pop("Coef.", None)
+                        sous_ligne.pop("Rattrapage Re-sit session", None)
+                        sous_ligne.pop("Cours et évaluations Courses and evaluations", None)
+                        # Renommer la pondération au niveau de la section
+                        for key in ["Pondération Weight", "Pondï¿½ration Weight", "PondÁration Weight"]:
+                            if key in sous_ligne:
+                                sous_ligne["pondération - section"] = sous_ligne.pop(key)
+                        if "Notes Grades" in sous_ligne:
+                            sous_ligne["note"] = sous_ligne.pop("Notes Grades")
+                        # Séparation des notes et pondérations multiples
+                        note_val = sous_ligne.pop("note", "")
+                        pond_val = sous_ligne.pop("pondération", "")
+                        notes = []
+                        if note_val and ("(" in note_val and ")" in note_val):
+                            notes = split_notes(note_val)
+                        elif note_val or pond_val:
+                            notes = [{"note": note_val, "pondération": pond_val}]
+                        else:
+                            notes = []
+                        sous_ligne["notes"] = notes
+                        # Remettre la pondération de section si elle existe
+                        if pond_val:
+                            sous_ligne["pondération"] = pond_val
+                        sections[section].append(sous_ligne)
+                    i += 1
+                if matiere_nom.strip() != "Crédits par indulgence / Leniency credits":
+                    organized.append({
+                        "matiere": matiere_nom,
+                        "coef": coef,
+                        "sections": sections
+                    })
+                else:
+                    break
             else:
-                break
-        else:
-            i += 1
+                i += 1
 
-    with open(json_file, "w", encoding="utf-8") as f:
-        json.dump(organized, f, ensure_ascii=False, indent=2)
+        with open(json_file, "w", encoding="utf-8") as f:
+            json.dump(organized, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"Erreur lors du parsing HTML: {e}")
+        raise

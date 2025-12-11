@@ -67,13 +67,13 @@ if NTFY_AUTH:
         exit(1)
 
 #? Endpoint de notification NTFY
+NTFY_URL_LOCAL_FALLBACK = os.getenv("NTFY_URL_LOCAL_FALLBACK", None)
 NTFY_URL = os.getenv("NTFY_URL") 
 if NTFY_URL:
     if not validate_ntfy_url(NTFY_URL):
         print("Erreur: L'URL NTFY est invalide. Format attendu: https://domain.com/topic")
         exit(1)
     print("URL ntfy custom utilisée :", NTFY_URL,"\n")
-    NTFY_URL_LOCAL_FALLBACK = os.getenv("NTFY_URL_LOCAL_FALLBACK", None)
     if NTFY_URL_LOCAL_FALLBACK and not validate_ntfy_url(NTFY_URL_LOCAL_FALLBACK):
         print("Erreur: L'URL NTFY_LOCAL_FALLBACK est invalide.")
         exit(1)
