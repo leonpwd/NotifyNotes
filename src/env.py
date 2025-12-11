@@ -5,8 +5,9 @@ import re
 ERROR_HASH = "9c287ec0f172e07215c5af2f96445968c266bcc24519ee0cf70f43f178fa613e"
 
 def validate_ntfy_url(url):
-    """Valider le format d'une URL ntfy"""
-    pattern = r'^https?://[a-zA-Z0-9][a-zA-Z0-9\-\.]*\.[a-zA-Z]{2,}/[a-zA-Z0-9_\-]+$'
+    """Valider le format d'une URL ntfy (accepte http et https, avec ou sans port, domaines et hostnames)"""
+    # Accepte: https://domain.com/topic, http://localhost:81/topic, http://ntfy:81/notifs
+    pattern = r'^https?://[a-zA-Z0-9][a-zA-Z0-9\-\.]*(?::\d+)?/[a-zA-Z0-9_\-]+$'
     return re.match(pattern, url) is not None
 
 #* Activer ou non le dotenv si le fichier .env est présent
