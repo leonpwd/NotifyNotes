@@ -15,7 +15,6 @@ RUN mkdir -p /config && chown -R appuser /app /config
 COPY requirements.txt .
 RUN pip install --no-cache-dir --require-hashes -r requirements.txt
 
-COPY .env .
 COPY . .
 
 COPY entrypoint.sh /entrypoint.sh
