@@ -77,6 +77,20 @@ NTFY_URL=https://ntfy.sh/mon-topic
 LOG_LEVEL=DEBUG
 ```
 
+### Installation locale
+
+```bash
+# Créer un environnement virtuel
+python3 -m venv venv
+source venv/bin/activate
+
+# Installer les dépendances avec vérification des hashes
+pip install --no-cache-dir --require-hashes -r requirements.txt
+
+# Lancer le script
+python src/main.py
+```
+
 ## 🤝 Contribuer
 
 Contributions bienvenues ! Ouvrez une issue ou une pull request.

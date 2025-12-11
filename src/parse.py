@@ -40,24 +40,31 @@ def convert_notes_to_json(url_response, json_file):
     if not html_content:
         raise ValueError("Le contenu HTML est vide ou invalide.")
 
-    soup = BeautifulSoup(html_content, "lxml")
-    
-    
-    thead = soup.find("thead")
-    if thead is None:
-        print("Avertissement : balise <thead> non trouvée dans la réponse, le serveur est probablement en train de se reload, attente 1 minutes avant relance...")
-        with open("debug_last_notes.html", "w", encoding="utf-8") as f:
-            f.write(html_content)
-        time.sleep(60)
-        print("Redémarrage du script...")
-        sys.exit(1)
-    header_row = thead.find_all("tr")[1]
-    headers = [fix_encoding_accents(th.get_text(separator=" ", strip=True).split("\n")[0]) for th in header_row.find_all("th")]
+    try:
+        soup = BeautifulSoup(html_content, "lxml")
+        
+        thead = soup.find("thead")
+        if thead is None:
+            print("Avertissement : balise <thead> non trouvée dans la réponse, le serveur est probablement en train de se reload, attente 1 minutes avant relance...")
+            # Sauvegarder en debug uniquement si LOG_LEVEL == DEBUG
+            import os
+            if os.getenv("LOG_LEVEL", "INFO").upper() == "DEBUG":
+                try:
+                    with open("debug_last_notes.html", "w", encoding="utf-8") as f:
+                        f.write(html_content[:10000])  # Limiter à 10KB pour éviter les gros fichiers
+                    os.chmod("debug_last_notes.html", 0o600)  # Restreindre les permissions
+                except Exception as e:
+                    print(f"Impossible de sauvegarder le fichier de debug: {e}")
+            time.sleep(60)
+            print("Redémarrage du script...")
+            sys.exit(1)
+        header_row = thead.find_all("tr")[1]
+        headers = [fix_encoding_accents(th.get_text(separator=" ", strip=True).split("\n")[0]) for th in header_row.find_all("th")]
 
-    rows = [
-        [fix_encoding_accents(td.get_text(separator=" ", strip=True)) for td in row.find_all("td")]
-        for row in soup.find("tbody").find_all("tr")
-        if "master-1" in row.get("class", [])
+        rows = [
+            [fix_encoding_accents(td.get_text(separator=" ", strip=True)) for td in row.find_all("td")]
+            for row in soup.find("tbody").find_all("tr")
+            if "master-1" in row.get("class", [])
     ]
 
     data = [dict(zip(headers, cells)) for cells in rows if any(cells[1:])]

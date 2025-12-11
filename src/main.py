@@ -38,7 +38,7 @@ def get_notes_content():
         'Sec-Fetch-User': '?1',
         'Cache-Control': 'max-age=0'
     }
-    response = requests.get(URL, headers=headers)
+    response = requests.get(URL, headers=headers, timeout=30)
     
     if response.status_code != 200:
         raise Exception(f"Erreur lors de la récupération des notes: {response.status_code} - {response.text}")

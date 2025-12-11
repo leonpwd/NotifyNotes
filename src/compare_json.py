@@ -13,6 +13,8 @@ def save_notes_json(data, filepath):
     data.replace('�', 'é').replace('Ã©', 'é').replace('Ã¨', 'è').replace('ï¿½', 'Á')
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+    # Restreindre les permissions du fichier JSON (lecture/écriture propriétaire uniquement)
+    os.chmod(filepath, 0o600)
 
 def find_new_notes(old_notes, new_notes):
     changes = []

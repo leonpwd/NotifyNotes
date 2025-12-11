@@ -1,7 +1,13 @@
 import os
 import random
+import re
 
 ERROR_HASH = "9c287ec0f172e07215c5af2f96445968c266bcc24519ee0cf70f43f178fa613e"
+
+def validate_ntfy_url(url):
+    """Valider le format d'une URL ntfy"""
+    pattern = r'^https?://[a-zA-Z0-9][a-zA-Z0-9\-\.]*\.[a-zA-Z]{2,}/[a-zA-Z0-9_\-]+$'
+    return re.match(pattern, url) is not None
 
 #* Activer ou non le dotenv si le fichier .env est présent
 if os.path.exists(".env"):
@@ -46,13 +52,22 @@ if NTFY_AUTH:
 #? Endpoint de notification NTFY
 NTFY_URL = os.getenv("NTFY_URL") 
 if NTFY_URL:
+    if not validate_ntfy_url(NTFY_URL):
+        print("Erreur: L'URL NTFY est invalide. Format attendu: https://domain.com/topic")
+        exit(1)
     print("URL ntfy custom utilisée :", NTFY_URL,"\n")
     NTFY_URL_LOCAL_FALLBACK = os.getenv("NTFY_URL_LOCAL_FALLBACK", None)
+    if NTFY_URL_LOCAL_FALLBACK and not validate_ntfy_url(NTFY_URL_LOCAL_FALLBACK):
+        print("Erreur: L'URL NTFY_LOCAL_FALLBACK est invalide.")
+        exit(1)
 else:
     # Si pas de variable d'env, on regarde dans le fichier STORAGE_FILE_URL
     if os.path.exists(STORAGE_FILE_URL):
         with open(STORAGE_FILE_URL, "r") as f:
             NTFY_URL = f.read().strip()
+        if not validate_ntfy_url(NTFY_URL):
+            print("Erreur: L'URL NTFY stockée est invalide. Supprimez le fichier et relancez.")
+            exit(1)
         print("URL ntfy récupérée depuis le fichier :", NTFY_URL,"\n")
         NTFY_AUTH = False
         auth = None
@@ -62,6 +77,7 @@ else:
         NTFY_URL = f"https://ntfy.sh/notes-{random_suffix}"
         with open(STORAGE_FILE_URL, "w") as f:
             f.write(NTFY_URL)
+        os.chmod(STORAGE_FILE_URL, 0o600)  # Restreindre les permissions
         print("URL ntfy par défaut générée :", NTFY_URL,"\n")
         NTFY_AUTH = False
         auth = None
