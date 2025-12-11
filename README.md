@@ -83,4 +83,4 @@ Contributions bienvenues ! Ouvrez une issue ou une pull request.
 
 ## 📝 Licence
 
-Unlicense – Partage libre
+Unlicense – Vive le partage
