@@ -38,10 +38,11 @@ def get_notes_content():
         'Sec-Fetch-User': '?1',
         'Cache-Control': 'max-age=0'
     }
-    response = requests.get(URL, headers=headers, timeout=30)
+    response = requests.get(URL, headers=headers, timeout=30, verify=True)
     
     if response.status_code != 200:
-        raise Exception(f"Erreur lors de la récupération des notes: {response.status_code} - {response.text}")
+        error_text = response.text[:500]  # Limiter la longueur du message d'erreur
+        raise Exception(f"Erreur lors de la récupération des notes: {response.status_code} - {error_text}")
     response.raise_for_status()
     return response.text
 
@@ -139,26 +140,9 @@ def send_notification(change):
                 print()
                 print("DEBUG : {e}")
 
-def main():
-    while True:
-        now = datetime.datetime.now()
-        # Mode DEBUG : exécution toutes les 30 secondes, sans contrainte d'heure
-        if LOG_LEVEL == "DEBUG":
-            interval = 30
-        else:
-            # Si on est hors de la plage minuit-7h, on attend jusqu'à minuit
-            if not (0 <= now.hour < 3):
-                next_midnight = (now + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-                sleep_seconds = (next_midnight - now).total_seconds()
-                print(f"Hors plage horaire, dodo jusqu'à minuit ({next_midnight.strftime('%Y-%m-%d %H:%M:%S')})")
-                time.sleep(sleep_seconds)
-                continue
-            interval = CHECK_INTERVAL
-            # Si on est entre 1h20 et 1h40, on attend 2 minutes
-            now_tz = get_tz_time()
-            if now_tz.hour == 1 and 20 <= now_tz.minute < 40:
-                interval = 120
-        
+def check_notes():
+    """Fonction pour vérifier et traiter les notes"""
+    try:
         # Récupérer le contenu des notes
         content = get_notes_content()
         current_time = get_tz_time().strftime("%Y-%m-%d %H:%M:%S")
@@ -171,7 +155,7 @@ def main():
         parse.convert_notes_to_json(content, STORAGE_NOTES_JSON_2)
         if not os.path.exists(STORAGE_NOTES_JSON_2):
             print(f"Erreur : le fichier {STORAGE_NOTES_JSON_2} n'a pas été créé.")
-            continue
+            return
 
         new_notes = comparator.load_notes_json(STORAGE_NOTES_JSON_2)
         
@@ -194,6 +178,35 @@ def main():
             if os.path.exists(STORAGE_NOTES_JSON):
                 os.remove(STORAGE_NOTES_JSON)
             shutil.move(STORAGE_NOTES_JSON_2, STORAGE_NOTES_JSON)
+    except Exception as e:
+        print(f"Erreur lors de la vérification des notes: {e}")
+
+def main():
+    # Premier check automatique au lancement
+    print("🚀 Premier check automatique au lancement du conteneur...")
+    check_notes()
+    print()
+    
+    while True:
+        now = datetime.datetime.now()
+        # Mode DEBUG : exécution toutes les 30 secondes, sans contrainte d'heure
+        if LOG_LEVEL == "DEBUG":
+            interval = 30
+        else:
+            # Si on est hors de la plage minuit-7h, on attend jusqu'à minuit
+            if not (0 <= now.hour < 3):
+                next_midnight = (now + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+                sleep_seconds = (next_midnight - now).total_seconds()
+                print(f"Hors plage horaire, dodo jusqu'à minuit ({next_midnight.strftime('%Y-%m-%d %H:%M:%S')})")
+                time.sleep(sleep_seconds)
+                continue
+            interval = CHECK_INTERVAL
+            # Si on est entre 1h20 et 1h40, on attend 2 minutes
+            now_tz = get_tz_time()
+            if now_tz.hour == 1 and 20 <= now_tz.minute < 40:
+                interval = 120
+        
+        check_notes()
 
         next_time = get_tz_time() + datetime.timedelta(seconds=interval)
         print("Prochain check à", next_time.strftime("%Y-%m-%d %H:%M:%S"))

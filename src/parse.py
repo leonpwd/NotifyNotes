@@ -46,24 +46,33 @@ def convert_notes_to_json(url_response, json_file):
         thead = soup.find("thead")
         if thead is None:
             print("Avertissement : balise <thead> non trouvée dans la réponse, le serveur est probablement en train de se reload, attente 1 minutes avant relance...")
-            # Sauvegarder en debug uniquement si LOG_LEVEL == DEBUG
             import os
             if os.getenv("LOG_LEVEL", "INFO").upper() == "DEBUG":
                 try:
                     with open("debug_last_notes.html", "w", encoding="utf-8") as f:
-                        f.write(html_content[:10000])  # Limiter à 10KB pour éviter les gros fichiers
-                    os.chmod("debug_last_notes.html", 0o600)  # Restreindre les permissions
+                        f.write(html_content[:10000])
+                    os.chmod("debug_last_notes.html", 0o600)
                 except Exception as e:
                     print(f"Impossible de sauvegarder le fichier de debug: {e}")
             time.sleep(60)
             print("Redémarrage du script...")
             sys.exit(1)
-        header_row = thead.find_all("tr")[1]
+        
+        # Vérifier que la structure est valide
+        tr_elements = thead.find_all("tr")
+        if len(tr_elements) < 2:
+            raise ValueError("Structure HTML invalide: <thead> ne contient pas assez de <tr>")
+        
+        header_row = tr_elements[1]
         headers = [fix_encoding_accents(th.get_text(separator=" ", strip=True).split("\n")[0]) for th in header_row.find_all("th")]
 
+        tbody = soup.find("tbody")
+        if tbody is None:
+            raise ValueError("Structure HTML invalide: <tbody> introuvable")
+        
         rows = [
             [fix_encoding_accents(td.get_text(separator=" ", strip=True)) for td in row.find_all("td")]
-            for row in soup.find("tbody").find_all("tr")
+            for row in tbody.find_all("tr")
             if "master-1" in row.get("class", [])
     ]
 

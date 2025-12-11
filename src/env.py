@@ -25,6 +25,23 @@ CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL", "1800"))
 
 #* Ajout de la gestion du timezone
 TZ = os.getenv("TZ", "Europe/Paris")
+# Validation simple du fuseau horaire
+try:
+    from zoneinfo import ZoneInfo
+    ZoneInfo(TZ)  # Vérifie que le TZ est valide
+except Exception:
+    print(f"Erreur: Fuseau horaire '{TZ}' invalide. Utilisation de Europe/Paris par défaut.")
+    TZ = "Europe/Paris"
+
+#* Validation de CHECK_INTERVAL
+try:
+    CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL", "1800"))
+    if CHECK_INTERVAL < 30 or CHECK_INTERVAL > 86400:
+        print(f"Avertissement: CHECK_INTERVAL doit être entre 30s et 24h. Utilisation de 1800s.")
+        CHECK_INTERVAL = 1800
+except ValueError:
+    print("Erreur: CHECK_INTERVAL doit être un nombre. Utilisation de 1800s.")
+    CHECK_INTERVAL = 1800
 
 #! Chargement des variables d'environnement importantes
 #? URL des notes à surveiller

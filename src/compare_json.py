@@ -6,8 +6,18 @@ def load_notes_json(filepath):
     if not os.path.exists(filepath):
         print(f"Le fichier {filepath} n'existe pas. Retourne une liste vide.")
         return []   
-    with open(filepath, "r", encoding="utf-8") as f:
-        return json.load(f)
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            if not isinstance(data, list):
+                raise ValueError("Le fichier JSON doit contenir une liste")
+            return data
+    except json.JSONDecodeError as e:
+        print(f"Erreur lors de la lecture du JSON {filepath}: {e}")
+        return []
+    except Exception as e:
+        print(f"Erreur inattendue lors de la lecture de {filepath}: {e}")
+        return []
 
 def save_notes_json(data, filepath):
     data.replace('�', 'é').replace('Ã©', 'é').replace('Ã¨', 'è').replace('ï¿½', 'Á')
