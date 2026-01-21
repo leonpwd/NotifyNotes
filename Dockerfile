@@ -10,20 +10,26 @@ WORKDIR /app
 RUN adduser --disabled-password --gecos "" --shell /sbin/nologin appuser
 
 # Création du dossier /config avec les bonnes permissions pour appuser
-RUN mkdir -p /config && chown -R appuser /app /config
+RUN mkdir -p /config && chown -R appuser:appuser /app /config
+
+# Installer su-exec et les certificats CA
+RUN apk add --no-cache su-exec ca-certificates && update-ca-certificates
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir --require-hashes -r requirements.txt
+# Corriger une vulnérabilité connue d'urllib3 via mise à niveau contrôlée
+RUN pip install --no-cache-dir --upgrade 'urllib3>=2.6.3,<3'
 
 COPY . .
 
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh && chmod 0755 /entrypoint.sh
+RUN chmod +x /entrypoint.sh && chown appuser:appuser /entrypoint.sh
 
-RUN apk add --no-cache su-exec
-
-USER appuser
+# Passer en root temporairement pour l'entrypoint (qui doit gérer les permissions du volume)
+# L'entrypoint s'assurera que appuser peut écrire dans /config
+USER root
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["python", "src/main.py"]
+CMD ["su-exec", "appuser", "python", "src/main.py"]
+HEALTHCHECK --interval=5m --timeout=20s --start-period=30s CMD pgrep -f "python src/main.py" >/dev/null || exit 1
 LABEL org.opencontainers.image.source="https://github.com/leonpwd/NotifyNotes"

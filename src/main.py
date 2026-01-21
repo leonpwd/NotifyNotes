@@ -1,4 +1,6 @@
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 import time
 import os
 import compare_json as comparator
@@ -38,11 +40,25 @@ def get_notes_content():
         'Sec-Fetch-User': '?1',
         'Cache-Control': 'max-age=0'
     }
-    response = requests.get(URL, headers=headers, timeout=30, verify=True)
+    # Session avec retry et backoff pour la robustesse réseau
+    session = requests.Session()
+    retries = Retry(
+        total=3,
+        backoff_factor=1.0,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["GET"],
+        raise_on_redirect=False,
+        raise_on_status=False,
+    )
+    session.mount("https://", HTTPAdapter(max_retries=retries))
+    session.mount("http://", HTTPAdapter(max_retries=retries))
+
+    # Désactiver les redirections pour réduire les risques liés aux redirects
+    response = session.get(URL, headers=headers, timeout=(5, 30), verify=True, allow_redirects=False)
     
     if response.status_code != 200:
-        error_text = response.text[:500]  # Limiter la longueur du message d'erreur
-        raise Exception(f"Erreur lors de la récupération des notes: {response.status_code} - {error_text}")
+        # N'imprime pas le corps pour éviter d'exposer des données
+        raise Exception(f"Erreur lors de la récupération des notes: {response.status_code}")
     response.raise_for_status()
     return response.text
 

@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+import os
 import re
 import json
 import unicodedata
@@ -138,6 +139,10 @@ def convert_notes_to_json(url_response, json_file):
 
         with open(json_file, "w", encoding="utf-8") as f:
             json.dump(organized, f, ensure_ascii=False, indent=2)
+        try:
+            os.chmod(json_file, 0o600)
+        except Exception:
+            pass
     except Exception as e:
         print(f"Erreur lors du parsing HTML: {e}")
         raise
