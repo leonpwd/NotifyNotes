@@ -1,0 +1,16 @@
+services:
+  notifynotes:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: notifynotes
+    env_file: .env
+    volumes:
+      - ./:/config
+    restart: unless-stopped
+    networks:
+      - notifynotes_net
+
+networks:
+  notifynotes_net:
+    driver: bridge

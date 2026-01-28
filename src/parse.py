@@ -82,7 +82,9 @@ def convert_notes_to_json(url_response, json_file):
         section_map = {
             "Projet": "Projet",
             "Contrôle Continu": "Contrôle Continu",
+            "Contrôle continu": "Contrôle Continu",
             "ContrÃ´le Continu": "Contrôle Continu",
+            "ContrÃ´le continu": "Contrôle Continu",
             "Examen": "Examen"
         }
 
@@ -108,11 +110,19 @@ def convert_notes_to_json(url_response, json_file):
                         for key in ["Pondération Weight", "Pondï¿½ration Weight", "PondÁration Weight"]:
                             if key in sous_ligne:
                                 sous_ligne["pondération - section"] = sous_ligne.pop(key)
-                        if "Notes Grades" in sous_ligne:
-                            sous_ligne["note"] = sous_ligne.pop("Notes Grades")
-                        # Séparation des notes et pondérations multiples
-                        note_val = sous_ligne.pop("note", "")
-                        pond_val = sous_ligne.pop("pondération", "")
+                        # Extraction robuste de la note et de la pondération
+                        note_val = ""
+                        pond_val = ""
+                        # Cherche la note dans toutes les colonnes possibles
+                        for key in ["Notes Grades", "note", "note item-ev1"]:
+                            if key in sous_ligne and sous_ligne[key]:
+                                note_val = sous_ligne.pop(key)
+                                break
+                        # Cherche la pondération dans toutes les colonnes possibles
+                        for key in ["Pondération Weight", "Pondï¿½ration Weight", "PondÁration Weight", "coefficient item-ev1", "pondération"]:
+                            if key in sous_ligne and sous_ligne[key]:
+                                pond_val = sous_ligne.pop(key)
+                                break
                         notes = []
                         if note_val and ("(" in note_val and ")" in note_val):
                             notes = split_notes(note_val)
