@@ -213,13 +213,6 @@ def main():
         if LOG_LEVEL == "DEBUG":
             interval = 30
         else:
-            # Si on est hors de la plage minuit-7h, on attend jusqu'à minuit
-            if not (0 <= now.hour < 3):
-                next_midnight = (now + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-                sleep_seconds = (next_midnight - now).total_seconds()
-                print(f"Hors plage horaire, dodo jusqu'à minuit ({next_midnight.strftime('%Y-%m-%d %H:%M:%S')})")
-                time.sleep(sleep_seconds)
-                continue
             interval = CHECK_INTERVAL
             now_tz = get_tz_time()
             current_date = now_tz.date()
@@ -227,6 +220,15 @@ def main():
                 window_date = current_date
                 window_done = False
 
+            # Si on est hors de la plage minuit-3h, on attend directement jusqu'à 01:40
+            if not (0 <= now_tz.hour < 3):
+                next_140 = (now_tz + datetime.timedelta(days=1)).replace(hour=1, minute=40, second=0, microsecond=0)
+                sleep_seconds = (next_140 - now_tz).total_seconds()
+                print(f"Hors plage horaire, dodo jusqu'à 01:40 ({next_140.strftime('%Y-%m-%d %H:%M:%S')})")
+                time.sleep(sleep_seconds)
+                continue
+
+            # Entre 00:00 et 01:20 : checks normaux
             # Entre 01:20 et 01:40 : on attend 01:40
             if now_tz.hour == 1 and 20 <= now_tz.minute < 40:
                 next_140 = now_tz.replace(minute=40, second=0, microsecond=0)
@@ -235,24 +237,24 @@ def main():
                 time.sleep(sleep_seconds)
                 continue
 
-            # Entre 01:40 et 01:59 : un seul check, puis dodo jusqu'au lendemain
+            # À partir de 01:40 : un seul check, puis dodo jusqu'au lendemain à 01:40
             if now_tz.hour == 1 and now_tz.minute >= 40:
                 if window_done:
-                    next_midnight = (now_tz + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-                    sleep_seconds = max(0, (next_midnight - now_tz).total_seconds())
-                    print("Check déjà fait à 01:40, dodo jusqu'au lendemain")
+                    next_140 = (now_tz + datetime.timedelta(days=1)).replace(hour=1, minute=40, second=0, microsecond=0)
+                    sleep_seconds = max(0, (next_140 - now_tz).total_seconds())
+                    print(f"Check déjà fait à 01:40, dodo jusqu'à demain 01:40 ({next_140.strftime('%Y-%m-%d %H:%M:%S')})")
                     time.sleep(sleep_seconds)
                     continue
-                interval = CHECK_INTERVAL
+                # Sinon on fait le check et on marquera window_done après
         
         check_notes()
         if LOG_LEVEL != "DEBUG":
             now_tz = get_tz_time()
             if now_tz.hour == 1 and now_tz.minute >= 40:
                 window_done = True
-                next_midnight = (now_tz + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-                sleep_seconds = max(0, (next_midnight - now_tz).total_seconds())
-                print("Check effectué à 01:40, dodo jusqu'au lendemain")
+                next_140 = (now_tz + datetime.timedelta(days=1)).replace(hour=1, minute=40, second=0, microsecond=0)
+                sleep_seconds = max(0, (next_140 - now_tz).total_seconds())
+                print(f"Check effectué à 01:40, dodo jusqu'à demain 01:40 ({next_140.strftime('%Y-%m-%d %H:%M:%S')})")
                 time.sleep(sleep_seconds)
                 continue
 
