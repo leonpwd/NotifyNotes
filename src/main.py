@@ -203,6 +203,10 @@ def main():
     check_notes()
     print()
     
+    # Un seul check dans la fenêtre 01:20-01:40 (par jour)
+    window_date = None
+    window_done = False
+    
     while True:
         now = datetime.datetime.now()
         # Mode DEBUG : exécution toutes les 30 secondes, sans contrainte d'heure
@@ -217,12 +221,40 @@ def main():
                 time.sleep(sleep_seconds)
                 continue
             interval = CHECK_INTERVAL
-            # Si on est entre 1h20 et 1h40, on attend 2 minutes
             now_tz = get_tz_time()
+            current_date = now_tz.date()
+            if window_date != current_date:
+                window_date = current_date
+                window_done = False
+
+            # Entre 01:20 et 01:40 : on attend 01:40
             if now_tz.hour == 1 and 20 <= now_tz.minute < 40:
-                interval = 120
+                next_140 = now_tz.replace(minute=40, second=0, microsecond=0)
+                sleep_seconds = max(0, (next_140 - now_tz).total_seconds())
+                print("Fenêtre 01:20-01:40 : attente jusqu'à 01:40 pour un unique check")
+                time.sleep(sleep_seconds)
+                continue
+
+            # Entre 01:40 et 01:59 : un seul check, puis dodo jusqu'au lendemain
+            if now_tz.hour == 1 and now_tz.minute >= 40:
+                if window_done:
+                    next_midnight = (now_tz + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+                    sleep_seconds = max(0, (next_midnight - now_tz).total_seconds())
+                    print("Check déjà fait à 01:40, dodo jusqu'au lendemain")
+                    time.sleep(sleep_seconds)
+                    continue
+                interval = CHECK_INTERVAL
         
         check_notes()
+        if LOG_LEVEL != "DEBUG":
+            now_tz = get_tz_time()
+            if now_tz.hour == 1 and now_tz.minute >= 40:
+                window_done = True
+                next_midnight = (now_tz + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+                sleep_seconds = max(0, (next_midnight - now_tz).total_seconds())
+                print("Check effectué à 01:40, dodo jusqu'au lendemain")
+                time.sleep(sleep_seconds)
+                continue
 
         next_time = get_tz_time() + datetime.timedelta(seconds=interval)
         print("Prochain check à", next_time.strftime("%Y-%m-%d %H:%M:%S"))
