@@ -4,7 +4,7 @@ Script Python auto-hébergé qui surveille vos notes du groupe OMNES et envoie d
 
 ## 🚀 Fonctionnalités
 
-- Surveillance automatique des notes
+- Surveillance automatique des notes OMNES
 - Notifications push sur téléphone/navigateur
 - Configuration simple via variables d'environnement
 - Déploiement Docker facile
